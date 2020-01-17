@@ -10,6 +10,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.net.URI;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -128,16 +129,27 @@ public class JmsCacheRestService {
         }
         Response.ResponseBuilder builder;
         try {
-            Date expiryDate = dateFormat.parse(expiryDateString);
-            getCache(cacheName).put(jms.getId(), jms, expiryDate);
+            Cache<String, JmsDto> cache = getCache(cacheName);
+            if (expiryDateString != null) {
+                Date expiryDate = dateFormat.parse(expiryDateString);
+                cache.put(jms.getId(), jms, expiryDate);
+            } else {
+                cache.put(jms.getId(), jms);
+            }
             builder = Response.ok(jms);
         } catch (WebApplicationException e) {
             throw e;
         } catch (Exception e) {
-            log.log(SEVERE, "An error occurred while updating message (" + messageId + "): " + e.getMessage(), e);
+            Response.Status status;
+            if (e instanceof ParseException) {
+                status = Response.Status.BAD_REQUEST;
+            } else {
+                status = Response.Status.INTERNAL_SERVER_ERROR;
+                log.log(SEVERE, "An error occurred while updating message (" + messageId + "): " + e.getMessage(), e);
+            }
             Map<String, String> responseObj = new HashMap<>();
             responseObj.put("error", e.getMessage());
-            builder = Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(responseObj);
+            builder = Response.status(status).entity(responseObj);
         }
         return builder.build();
     }

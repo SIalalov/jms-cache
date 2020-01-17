@@ -87,11 +87,31 @@ public class JmsCacheRestServiceTest {
     }
 
     /**
-     * Проверка обращения к несуществующему кэшу или к несуществующему элементу
+     * Проверка изменения сообщения
+     * @param contextPath
      */
     @Test
     @RunAsClient
     @InSequence(2)
+    public void testUpdateMessage(@ArquillianResource URL contextPath) {
+        String id = ID1;
+        JmsDto jmsDto = new JmsDto(id, "changed");
+
+        Response response = request(contextPath, "/first/" + id)
+                .put(Entity.entity(jmsDto, MediaType.APPLICATION_JSON));
+        assertEquals(Response.Status.OK, response.getStatusInfo());
+
+        response = request(contextPath, "/first/" + id).get();
+        JmsDto jms = response.readEntity(JmsDto.class);
+        assertEquals("changed", jms.getContent());
+    }
+
+    /**
+     * Проверка обращения к несуществующему кэшу или к несуществующему элементу
+     */
+    @Test
+    @RunAsClient
+    @InSequence(3)
     public void testUnknownCache(@ArquillianResource URL contextPath) {
         Response response = request(contextPath, "/lalala/id").get();
         assertEquals(Response.Status.NOT_FOUND, response.getStatusInfo());
@@ -105,7 +125,7 @@ public class JmsCacheRestServiceTest {
      */
     @Test
     @RunAsClient
-    @InSequence(3)
+    @InSequence(4)
     public void testGetExpired(@ArquillianResource URL contextPath) throws InterruptedException {
         JmsDto jmsDto2 = new JmsDto(ID2, "second");
         Response response = request(contextPath, "/first")
@@ -123,6 +143,11 @@ public class JmsCacheRestServiceTest {
         assertEquals(Response.Status.OK, response.getStatusInfo());
 
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+
+        jmsDto2.setContent("changed");
+        response = request(contextPath, "/first/" + ID2 + "?expiryDate=wrong_date")
+                .put(Entity.entity(jmsDto2, MediaType.APPLICATION_JSON));
+        assertEquals(Response.Status.BAD_REQUEST, response.getStatusInfo());
 
         response = request(contextPath, "/first/" + ID2 +
                 "?expiryDate=" + dateFormat.format(createDate(0)))
@@ -143,14 +168,14 @@ public class JmsCacheRestServiceTest {
      * отправки сообщения в activemq по истечению срока
      */
     @Test
-    @InSequence(4)
+    @InSequence(5)
     public void testCreatedMessages() {
         List<Jms> list = em.createQuery("select e from Jms e", Jms.class).getResultList();
         assertEquals(2, list.size());
         for (Jms jms : list) {
             switch (jms.getId()) {
                 case ID1:
-                    assertEquals("first", jms.getContent());
+                    assertEquals("changed", jms.getContent());
                     break;
                 case ID3:
                     assertEquals("third", jms.getContent());
@@ -174,7 +199,7 @@ public class JmsCacheRestServiceTest {
      */
     @Test
     @RunAsClient
-    @InSequence(5)
+    @InSequence(6)
     public void testRemoveMessage(@ArquillianResource URL contextPath) {
         Response response = request(contextPath, "/second/" + ID3).get();
         assertEquals(Response.Status.OK, response.getStatusInfo());
@@ -192,7 +217,7 @@ public class JmsCacheRestServiceTest {
      * Проверка, что сообщения удалились из персистентного хранилища, и jms не отправились в activemq
      */
     @Test
-    @InSequence(6)
+    @InSequence(7)
     public void testDeletedMessages() throws InterruptedException {
         sleep(2000L);
         List<Jms> list = em.createQuery("select e from Jms e", Jms.class).getResultList();
