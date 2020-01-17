@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ru.test</groupId>
+    <artifactId>jms-cache</artifactId>
+    <version>1.0.0</version>
+    <packaging>war</packaging>
+    <name>JMS Cache Project</name>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- JBoss dependency versions -->
+
+        <version.wildfly.maven.plugin>1.2.0.Beta1</version.wildfly.maven.plugin>
+
+        <version.server.bom>18.0.0.Final</version.server.bom>
+
+        <!-- other plug-in versions -->
+        <version.war.plugin>2.6</version.war.plugin>
+
+        <!-- maven-compiler-plugin -->
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+
+        <failOnMissingWebXml>false</failOnMissingWebXml>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- importing the jakartaee8-with-tools BOM adds specs and other useful artifacts as managed dependencies -->
+            <dependency>
+                <groupId>org.wildfly.bom</groupId>
+                <artifactId>wildfly-jakartaee8-with-tools</artifactId>
+                <version>${version.server.bom}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Import the CDI API, we use provided scope as the API is included  in JBoss EAP -->
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the Common Annotations API (JSR-250), we use provided scope
+        as the API is included in JBoss EAP -->
+        <dependency>
+            <groupId>org.jboss.spec.javax.annotation</groupId>
+            <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the JPA API, we use provided scope as the API is included in JBoss EAP -->
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the JTA API, we use provided scope as the API is included in JBoss EAP -->
+        <dependency>
+            <groupId>org.jboss.spec.javax.transaction</groupId>
+            <artifactId>jboss-transaction-api_1.3_spec</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the EJB API, we use provided scope as the API is included in JBoss EAP -->
+        <dependency>
+            <groupId>org.jboss.spec.javax.ejb</groupId>
+            <artifactId>jboss-ejb-api_3.2_spec</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the JMS API, we use provided scope as the API is included in JBoss EAP -->
+        <dependency>
+            <groupId>org.jboss.spec.javax.jms</groupId>
+            <artifactId>jboss-jms-api_2.0_spec</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the JAX-RS API, we use provided scope as the API is included in EAP -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxrs</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import the Jackson API for JSON mapping, we use provided scope as the API is included in EAP -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Import Arquillian API for testing on real EAP -->
+        <dependency>
+            <groupId>org.jboss.arquillian.junit</groupId>
+            <artifactId>arquillian-junit-container</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Import JUnit API for testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Import JAX-RS Client API to test real http request -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Import Shrinkwrap API to build test war -->
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-api-maven</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Import Common Logger API to use test logs -->
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <defaultGoal>install</defaultGoal>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>arquillian-jbossas-managed</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.wildfly.arquillian</groupId>
+                    <artifactId>wildfly-arquillian-container-managed</artifactId>
+                    <version>2.2.0.Final</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.jboss.arquillian.protocol</groupId>
+                    <artifactId>arquillian-protocol-servlet</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack</id>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.wildfly</groupId>
+                                            <artifactId>wildfly-dist</artifactId>
+                                            <version>17.0.0.Final</version>
+                                            <type>zip</type>
+                                            <overWrite>false</overWrite>
+                                            <outputDirectory>target</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
+
